@@ -1,0 +1,82 @@
+<?php
+// timetracker.install
+
+/*
+manual install for phpmyAdmin
+
+USE `d7_user_1`;
+
+
+CREATE TABLE IF NOT EXISTS `timetracker_projects` (
+  `id` int(10) AUTO_INCREMENT,
+  `project_id` int(10) DEFAULT NULL,
+  `project_name` varchar(32) DEFAULT NULL,
+  `project_desc` varchar(255) DEFAULT NULL,		  
+  `project_hours` int(4) DEFAULT NULL,
+   PRIMARY KEY  (`id`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+      
+CREATE TABLE IF NOT EXISTS `timetracker_project_events` (
+  `id` int(10) AUTO_INCREMENT,
+  `user_id` int(10) DEFAULT NULL,
+  `project_id` int(10) DEFAULT NULL,
+  `project_name` varchar(32) DEFAULT NULL,
+  `project_user_task` varchar(255) DEFAULT NULL,
+  `event_date` datetime DEFAULT NULL,
+  `project_hours` int(4) DEFAULT NULL,
+   PRIMARY KEY  (`id`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+      
+CREATE TABLE IF NOT EXISTS `timetracker_user_totals` (
+  `id` int(10) AUTO_INCREMENT,
+  `user_id` int(10) DEFAULT NULL,
+  `project_id` int(10) DEFAULT NULL,
+  `project_name` varchar(32) DEFAULT NULL,
+  `project_hours` int(4) DEFAULT NULL,
+   PRIMARY KEY  (`id`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+*/
+
+function timetracker_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      // the {tablename} syntax is so multisite installs can add a
+      // prefix to the table name as set in the settings.php file
+      db_query("CREATE TABLE {timetracker_projects} (
+          `id` int(10) DEFAULT NULL,
+		  `project_id` int(10) DEFAULT NULL,
+		  `project_name` varchar(32) DEFAULT NULL,
+		  `project_desc` varchar(255) DEFAULT NULL,		  
+		  `project_hours` int 4 DEFAULT NULL,
+          PRIMARY KEY  (id)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      
+      db_query("CREATE TABLE {timetracker_project_events} (
+          `id` int(10) DEFAULT NULL,
+		  `user_id` int(10) DEFAULT NULL,
+		  `project_id` int(10) DEFAULT NULL,
+		  `project_name` varchar(32) DEFAULT NULL,
+		  `project_user_task` varchar(255) DEFAULT NULL,
+		  `time_start` datetime DEFAULT NULL,
+		  `hours` int 4 DEFAULT NULL,
+		  `time_used` int(10) DEFAULT NULL
+          PRIMARY KEY  (id)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      
+      db_query("CREATE TABLE {timetracker_user_totals} (
+          `id` int(10) DEFAULT NULL,
+		  `user_id` int(10) DEFAULT NULL,
+		  `project_id` int(10) DEFAULT NULL,
+		  `project_name` int(10) DEFAULT NULL,
+		  `project_hours` int 4 DEFAULT NULL,
+          PRIMARY KEY  (id)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      break;
+  }
+}
+?>

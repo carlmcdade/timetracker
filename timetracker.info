@@ -1,0 +1,15 @@
+name = Time Tracker
+description = Project time management and tasking
+package = Time Tracker modules
+core = 7.x
+
+dependencies[] = menu 
+dependencies[] = menu_item_visibility 
+
+version = "7.x"
+core = "7.x"
+project = "timetracker"
+datestamp = "1318680418"
+configure = admin/config/timetracker
+
+

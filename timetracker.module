@@ -1,0 +1,734 @@
+<?php
+
+/**
+*
+* @author Carl McDade
+* @copyright Copyright (c) 2010, Carl McDade
+* @since 2010-02-19
+* @version 0.2
+* @license http://opensource.org/licenses/gpl-license.php GNU Public License
+* @link http://www.drupal.se Drupal Sweden
+*  
+*/
+
+/**
+*
+* Define some constants and globals that can be easily changed. Done here because there maybe multiple modules.
+* taking care of different application sets. Start bootstrapping here.
+*
+* @todo create a more structured bootstrap file that can be used in other
+* situations
+*
+*/
+
+
+define('APP_MODULE', 'timetracker');
+define('APP_PATH', drupal_get_path('module', APP_MODULE));
+define('DOCROOT', drupal_get_path('module', APP_MODULE));
+define('INI_FILENAME', drupal_get_path('module', APP_MODULE) . "/_configuration/tt.ini");
+
+
+
+// frameworks
+spl_autoload_register('_autoload');
+
+
+/*
+* These global variables are necessary to carry values to the Classes nested
+* in the module functions.
+*
+* @todo Module_list and hook_list should come from a configuration data source
+* loaded by a Singleton Class
+*
+*/
+
+/**
+* ============================= Drupal hooks ===================================
+* 
+* This area should be keep to a minimum to  reduce the noise from Drupal. 
+* 
+*/
+
+/**
+*
+* Call to the Drupal hook_menu
+*
+* Each call to a function from a path is exchanged through a single Class loader
+* that loads the Class file and calls the Class methods. In most cases the called
+* Class is a controller
+*
+* path and file arguments are not used here because we want to use a single dynamic
+* file and class loader
+*
+* formatting only allows page activation under prefixed [app_trigger]/[controller]/[action]
+*
+* access is always open with the access callback set to true. Access control is
+* left to timetracker_access().
+* @return array
+*
+*/
+
+
+function timetracker_permission() {
+  return array(
+    'use timetracker' => array(
+      'title' => t('Use timetracker'), 
+      'description' => t('Use the time management and project page.'),
+    ),
+    'administer timetracker' => array(
+      'title' => t('Administer timetracker'), 
+      'description' => t('Administer the projects and reports.'),
+    ),
+  );
+}
+
+function timetracker_menu()
+{
+ 
+    $items[ APP_MODULE . '/%/%' ] = array(
+        'page callback' => APP_MODULE . '_controller',
+        'page arguments' => array(1, 2),
+        'access arguments' => array('use timetracker'),
+        'type' => MENU_CALLBACK,
+
+    );   
+    
+    // Need at least one child item before your section will appear.
+	  $items['admin/'. APP_MODULE .''] = array(
+		'title' => 'Timetracker administration',
+		'description' => 'Settings for taxonomy and other configuration to be used in project listings',
+		'page callback' => APP_MODULE .'_controller',
+		'access arguments' => array('administer timetracker'),
+	  );
+	  
+	// Need at least one child item before your section will appear.
+	  $items['admin/'. APP_MODULE .'/reports'] = array(
+		'title' => 'Timetracker reports',
+		'description' => 'Settings for taxonomy and other configuration to be used in project listings',
+		'page callback' => APP_MODULE .'_controller',
+		'access arguments' => array('administer timetracker'),
+		'type' => MENU_LOCAL_TASK,
+	  );
+	  
+	// Need at least one child item before your section will appear.
+	  $items['admin/'. APP_MODULE .'/settings'] = array(
+		'title' => 'Timetracker settings',
+		'description' => 'Settings for taxonomy and other configuration to be used in project listings',
+		'page callback' => APP_MODULE .'_controller',
+		'access arguments' => array('administer timetracker'),
+	  ); 
+	  
+    return $items;
+
+} 
+
+/**
+* implement Drupal hook_taxonomy_term_delete()
+* using this hook to delete term information that is attached in the timetracker project table
+* the table is used because terms do not have fields and we need to store more information
+* to use terms as project containers
+*/
+
+function timetracker_taxonomy_term_delete($term)
+{
+	$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+	
+	// compare the term vid to the vid of the vocabulary chosen in the timetracker settings
+	if($term->vid == $voc->vid)
+	{
+		print $term->tid;
+		$deleted = db_delete('timetracker_projects')
+			->condition('project_id', $term->tid)
+			->execute();
+			print t('Project "') . $term->name . t('" deleted.');
+	}
+}
+
+
+/**
+* =================================== CONTROLLER ===============================
+* @author Carl McDade
+* @since 2010-02-14
+* Start the contoller class using the autoloader function. The arguments are the Class name and method
+* sent from the routing system. Controllers are contained in a function that sees Drupal and makes Drupal
+* functions available to the Class.
+*
+* @todo Test the use of reflection API to aviod instantating the Class and to get more information on arguments
+* needed for the method rather than forcing them to conform to the URI input.
+*
+* @return null
+*/
+
+
+
+function _autoload($class)
+{    
+	// get a list of class file names. Allow only these and not Drupal class files in array
+	$class = strtolower($class);
+	$check_admin = explode('_', $class);
+	
+	if(isset($check_admin[1]) && $check_admin[1] == 'admin')
+	{
+		//
+		$path = DOCROOT . '/_controllers/'. $check_admin[0] . '/' . $check_admin[0] . '_' . $check_admin[1] . '.class.inc';
+		if(file_exists($path))
+		{
+			require_once($path);
+		}
+	}
+	else
+	{
+		//
+		$extensions = array(".inc",".php",".class.inc",".class.php");
+		foreach($extensions as $extension)
+		{		
+			$path = DOCROOT . '/_controllers/'. $class . '/' . $class . $extension;
+			$path = str_replace("\\", "/", $path);
+		
+			if(file_exists($path))
+			{
+				require_once($path);
+			}
+		}
+	}
+	
+    return;
+}
+
+
+
+function timetracker_controller()
+{
+
+	$class =  strtolower(arg(1));
+    $action =  strtolower(arg(2));
+    
+    
+    // internal admin url
+    if(arg(1) == 'admin')
+    {
+    	$class = strtolower(arg(2)) . '_admin';
+    	$action = strtolower(arg(3));
+    }
+    
+    // drupal admin url   
+    if(arg(0) == 'admin')
+    {
+    	$class = strtolower(arg(1)) . '_admin';
+    	
+    	// default to the index method of the class when a method is not found
+    	if(arg(2) == '')
+    	{
+    		$action = 'index';
+    	}
+    	else
+    	{
+    		$action = strtolower(arg(2));
+    	}
+    }
+    
+    
+
+    // URI items after the /controller/action are loaded into the function as parameters
+    $arguments = func_get_args();
+    
+    // iterate the parameters but skip the first two as they are the controller and action
+    //
+    $args = implode(',' , $arguments);
+    
+    $controller = new $class();
+    if(method_exists($controller, $action))
+    {
+    	return $controller->$action($args); // send string of arguments
+    }
+    else
+    {
+    	return drupal_not_found();
+    }
+
+}
+
+
+
+/**
+* ==================================== MODEL ===================================
+* @author Carl McDade
+* @since 2010-02-14
+* Start the class loader function. The arguments are the Class name
+*
+* Add any database routines here and load the results into variables. Complicated
+* solutions should be placed in a model file
+*
+* Add any business logic here and load the results to variables. Complicated
+* solutions should be placed in a model file
+*
+*/
+
+
+function timetracker_model( $model, $mode, $parameter = NULL )
+{	
+	$model_path = DOCROOT . '/_models' . '/' . $model . '.model.inc';
+    if(include_once($model_path))
+    {
+    	//
+    	$data = new $model;
+    	if(method_exists($data,$mode))
+    	{
+    		//
+    		return $data->$mode();
+    	}
+    	else
+    	{
+    		return 'The model was not was not processed.';
+    	}
+    }
+    else
+    {
+    	return 'The model file was not found.';
+    }
+}
+
+
+/**
+* ===================================== VIEW ===================================
+* @author Carl McDade
+* @since 2010-02-14
+* This is where the views are registered to Drupals system. Using the hook_theme
+* function a template is choosen from the _view directory.Be careful not to use
+* the same template twice ie. both as parent and child template in the timetracker_view().
+* @TODO fix it so that duplicates cannot happen
+*
+*/
+
+
+function timetracker_view($view, $variables = NULL, $output = NULL)
+{
+
+    $template_path = DOCROOT . '/_views' . '/' . $view . '.tpl.php';
+    
+    if (file_exists($template_path) == false)
+    {
+        trigger_error("Template {$view} not found in ". $template_path);
+        return false;
+    }
+
+    if(is_array($variables))
+    {
+
+        // Load variables here because they become part of the module not the theme template.php file.
+        foreach ($variables as $key => $value)
+        {
+        	// do not render a variable if it is an empty value
+            
+            	//
+            	$$key = $value;
+        	
+        }
+
+        // pre-load the tt child template output with variables
+       $output .= timetracker_render_template($template_path, $variables);
+    }
+
+    // output everything into a parent template. Drupals theme system page is the default
+   return $output;
+
+}
+
+function _menu_links($menu, $separater = NULL, $template = NULL, $index = NULL)
+{
+    
+     $list = array();
+     $output ='';
+    
+     foreach($menu as $section => $group)
+     {   
+		 
+			 $list[] =  l($group['text'],$group['path']);			 
+		   
+     }
+    
+     $output .= implode($separater, $list);    
+     return $output;
+}
+
+
+/**
+* @todo Update INI file methods to handle sections and add these to INI file
+*
+* the array of permission actually have to exists in the hook_perm fuction used by Drupal
+* the reason I do this here is to enforce the ordered tt routing conventions 
+* over the chaotic Drupal ones. MVC usage hints to where and what is being used in the code
+* while Drupal allows anything to hide anywhere.
+*
+*/
+	
+
+
+// Do our own render function because D7 adds the DRUPAL_ROOT which we don't need
+function timetracker_render_template($template_file, $variables)
+{
+  extract($variables, EXTR_SKIP); // Extract the variables to a local namespace
+  ob_start(); // Start output buffering
+  include $template_file; // Include the template file
+  return ob_get_clean(); // End buffering and return its contents
+}
+
+function timetracker_mytime_()
+{
+			// get vocabulary as options list
+			$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+			$tree = taxonomy_get_tree($voc->vid,0,NULL,true);
+			
+			$terms = array(0 => ''); 
+			foreach ($tree as $key => $term)
+			{
+				$terms[$term->tid] = $term->name;
+			}
+			
+			ksort($terms);
+			
+			  $form['user_task'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Task'),
+				'#prefix' => '<table id="task-table"><tr><td>',
+			  );
+			  
+			  $form['project_id'] = array(
+				'#type' => 'select',
+				'#title' => t('Projects'),
+				'#options' => $terms,
+				'#default_value' => $terms[0],
+				'#description' => t('Choose a project. (optional)'),
+				'#prefix' => '',
+				'#suffix' => ''
+			  );			
+			  			  
+			  $form['event_date'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Date'),
+				'#size' => '10',
+				'#prefix' => '',
+				'#suffix' => ''
+			  );	
+			  
+			  $form['hours_used'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Hours'),
+				'#size' => '4',
+			  );
+			  
+			  $form['submit'] = array(
+				'#type' => 'submit', 
+				'#value' => 'Save',
+				'#prefix' => '<div class="form-item form-type-submit">',
+				'#suffix' => '</div></td></tr></table>'
+			  );		  
+			  			
+			  $form['#action'] = url('timetracker/timetracker/mytime');
+			  
+		return $form;
+}
+
+function timetracker_myreports_()
+{
+	global $user;		
+	
+	// get vocabulary as options list
+	$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+	$tree = taxonomy_get_tree($voc->vid,0,NULL,true);
+	
+	
+			
+	foreach ($tree as $key => $term)
+	{
+		$terms[$term->tid] = $term->name;
+		$tids[] = $term->tid;
+	}
+	
+	ksort($terms);
+		
+	$project = $tids[0];
+	
+	$result = db_query('SELECT *
+			FROM {timetracker_project_events} e WHERE e.user_id = :uid AND e.project_id = :pid ORDER BY created DESC', array(':uid' => $user->uid,':pid' => $project));
+				
+	// Result is returned as a iterable object that returns a stdClass object on each iteration
+	$all = $result->fetchAll();		
+    
+    
+    /* form with table display */
+    
+			  $form['my_projects_id'] = array(
+				'#type' => 'select',
+				'#title' => t('Projects'),
+				'#options' => $terms,
+				'#default_value' => $project,
+				'#description' => t('Choose another project to show your accumulated time.'),
+			  );
+			  
+			  $form['submit'] = array(
+			  	 '#type' => 'submit', 
+			  	 '#value' => t('Show report'),
+			  	 '#submit' => array('Submit'),
+			  );
+			  
+			  $form['#action'] = url('timetracker/timetracker/myreport');
+			  
+			  $markup = '<div id="output"></div>';
+			  //$markup .= '<pre>'.print_r($all, 1) . '</pre>'
+				  
+			  $form['table'] = array(
+				'#type' => 'item', 
+				'#markup' => $markup,
+			  );
+			  
+	return $form;
+	
+}
+
+function timetracker_myreports_csv_()
+{
+	// Drupal still has a bug that creates type submit rather than button
+			  $form['export'] = array(
+				'#type' => 'item', 
+				'#markup' => '<input type="button" class="form-submit" value="Export report" name="export" id="edit-export">',
+			  );
+			  
+			  $form['my_report_id'] = array(
+				'#type' => 'hidden',
+				'#attributes' => array('id' => 'my-report-id')
+			  );
+			  
+			  $form['#action'] = url('timetracker/timetracker/myreport_csv');
+			  
+	return $form;
+}
+
+
+function timetracker_updatetime_()
+{
+	//
+	
+}
+	
+function timetracker_settings_form()
+{
+		$vids = db_query("SELECT machine_name, name  FROM {taxonomy_vocabulary}")->fetchAll();
+		foreach ($vids as $key => $voc)
+		{
+			$projects[$voc->machine_name] = $voc->name;
+		}
+		
+		$form['selected'] = array(
+				'#type' => 'select',
+				'#title' => t('Project Category'),
+				'#options' => $projects,
+				'#default_value' => variable_get('timetracker_projects', 'projects'),
+				'#description' => t('Set this to <em>Yes</em> if you would like this category to be selected by default.'),
+			  );
+		$form['submit'] = array(
+			'#type' => 'submit', 
+			'#value' => 'Submit',
+		);
+		
+		$form['#action'] = url('timetracker/admin/timetracker/settings_save');
+		
+		return $form;
+    	//$output = '<pre>' . print_r($vids, 1) . '</pre>';
+}
+
+function timetracker_projects_add_()
+{
+	global $user;
+	
+	
+	// if we are on the edit page fill the values
+	$pid = check_plain(arg(3));
+	
+	$form['add'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('Add a project'),
+		'#collapsible' => TRUE,
+		'#collapsed' => TRUE,
+
+		);
+	
+	if(isset($pid) && is_numeric($pid))
+	{		
+		$op = t('Update project');
+		$project = db_query("SELECT * FROM {timetracker_projects} WHERE project_id= :pid", array(':pid' => $pid))->fetchAll();
+		$db_op = 'project_update';
+		$project = (array)$project[0];
+		
+		$form['add']['project_id'] = array(
+			'#type' => 'hidden', 
+			'#value' => $pid,
+		);
+		
+	}
+	else
+	{
+		//
+		$op = t('Add project');
+		$db_op = 'project_save';
+	}
+	
+	
+	
+	
+	// get the groups available
+	$list = db_query("SELECT *  FROM {timetracker_project_groups}")->fetchAll();
+	foreach ($list as $key => $group)
+	{
+		$groups[$group->project_group_id] = $group->project_group_name;
+	}
+	
+	
+	
+    $form['add']['project_name'] = array(
+		'#type' => 'textfield', 
+		'#title' => t('Project name'),
+		'#default_value' => isset($project['project_name']) ? $project['project_name'] : '',
+	);
+	
+	
+	$form['add']['project_group'] = array(
+		'#type' => 'select',
+		'#options' => $groups,
+		'#default_value' => isset($project['project_group_id']) ? $project['project_group_id'] : '',
+		'#title' => t('Project group'),
+		'#description' => t('This will automatically add the prefix for the group. Example: choosing TTC will give "OP-"')
+	);
+	
+	$form['add']['project_external_key'] = array(
+		'#type' => 'textfield', 
+		'#title' => t('Project key'),
+		'#default_value' => isset($project['project_external_key']) ? $project['project_external_key'] : '',
+		'#description' => t('This is the suffix for the project code and must be unique. Example: if your project is named Admin then example: "ADM"')
+	);
+	
+	$form['add']['project_desc'] = array(
+		'#type' => 'textfield', 
+		'#default_value' => isset($project['project_desc']) ? $project['project_desc'] : '',
+		'#title' => t('Description'),
+	);
+	
+	$form['add']['project_status'] = array(
+		'#type' => 'select',
+		'#options' => array('open','closed','frozen'),
+		'#title' => t('Project status'),
+		'#default_value' => isset($project['status']) ? $project['status'] : '',
+		'#description' => t('Projects are automatically open unless changed here.')
+	);
+			  
+	$form['submit'] = array(
+		'#type' => 'submit', 
+		'#value' => $op,
+		'#submit' => array('Submit'),
+	);
+			  
+	$form['#action'] = url('admin/timetracker/'. $db_op);// admin class
+			  
+			  
+	return $form;
+	
+}
+
+function timetracker_projects_edit_()
+{
+	global $user;
+	
+	
+	// if we are on the edit page fill the values
+	$pid = check_plain(arg(3));
+	
+	$query = db_select('taxonomy_term_data', 'td')
+		
+			->condition('tid', $pid, '=')
+			->fields ('td',array('tid', 'name', 'description'));
+		$query->leftJoin('timetracker_projects', 'tt', 'td.tid = tt.project_id');
+		$query->leftJoin('timetracker_project_groups', 'g', 'g.project_group_id = tt.project_group_id');
+		$query->leftJoin('timetracker_project_status', 's', 'tt.status = s.id');
+		$query->fields ('tt', array('project_external_key', 'created', 'project_hours'));
+		$query->fields ('g', array('project_group_name', 'project_group_prefix'));
+		$query->fields ('s');
+			
+		$project = (array)$query->execute()->fetchObject();
+		//print_r($project);
+	
+	// get the groups available
+	$list = db_query("SELECT *  FROM {timetracker_project_groups}")->fetchAll();
+	foreach ($list as $key => $group)
+	{
+		$groups[$group->project_group_id] = $group->project_group_name;
+	}
+	
+	// get the available status
+	$type = db_query("SELECT * FROM {timetracker_project_status}")->fetchAll();
+	foreach ($type as $key => $status)
+	{
+		$types[$status->id] = $status->status_name;
+	}
+	
+	$form['add'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('edit a project'),
+		'#collapsed' => false,
+		);
+	
+	$form['add']['project_id'] = array(
+		'#type' => 'hidden', 
+		'#default_value' => isset($project['tid']) ? $project['tid'] : '',
+	);
+	
+    $form['add']['project_name'] = array(
+		'#type' => 'textfield', 
+		'#title' => t('Project name'),
+		'#default_value' => html_entity_decode($project['name']),
+	);
+	
+	$form['add']['project_group'] = array(
+		'#type' => 'select',
+		'#options' => $groups,
+		'#default_value' => isset($project['project_group_id']) ? $project['project_group_id'] : '',
+		'#title' => t('Project group'),
+		'#description' => t('This will automatically add the prefix for the group. Example: choosing TTC will give "OP-"')
+	);
+	
+	$form['add']['project_external_key'] = array(
+		'#type' => 'textfield', 
+		'#title' => t('Project key'),
+		'#default_value' => html_entity_decode($project['project_external_key']),
+		'#description' => t('This is the suffix for the project code and must be unique. Example: if your project is named Admin then example: "ADM"')
+	);
+	
+	$form['add']['project_desc'] = array(
+		'#type' => 'textfield', 
+		'#default_value' => html_entity_decode($project['description']),
+		'#title' => t('Description'),
+	);
+	
+	$form['add']['project_status'] = array(
+		'#type' => 'select',
+		'#options' => $types,
+		'#title' => t('Project status'),
+		'#default_value' => isset($project['status']) ? $project['status'] : '',
+		'#description' => t('Projects are automatically open unless changed here.')
+	);
+			  
+	$form['submit'] = array(
+		'#type' => 'submit', 
+		'#value' => t('Update project'),
+		'#submit' => array('Submit'),
+	);
+			  
+	$form['#action'] = url('admin/timetracker/project_update');// admin class
+			  
+			  
+	return $form;
+	
+}
+    
+    	
+
+?>
