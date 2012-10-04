@@ -1,4 +1,3 @@
-
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
 
@@ -10,7 +9,7 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
 
 
-CREATE TABLE IF NOT EXISTS alpha_timetracker_projects (
+CREATE TABLE IF NOT EXISTS timetracker_projects (
   id int(10) NOT NULL auto_increment,
   project_group_id int(10) NOT NULL default '0',
   project_id int(10) default NULL,
@@ -28,7 +27,7 @@ CREATE TABLE IF NOT EXISTS alpha_timetracker_projects (
 
 
 
-CREATE TABLE IF NOT EXISTS alpha_timetracker_project_events (
+CREATE TABLE IF NOT EXISTS timetracker_project_events (
   id int(10) NOT NULL auto_increment,
   user_id int(10) default NULL,
   project_id int(10) default NULL,
@@ -43,16 +42,16 @@ CREATE TABLE IF NOT EXISTS alpha_timetracker_project_events (
 
 
 
-CREATE TABLE IF NOT EXISTS alpha_timetracker_project_groups (
+CREATE TABLE IF NOT EXISTS timetracker_project_groups (
   project_group_id int(10) NOT NULL auto_increment,
   project_group_name varchar(32) NOT NULL,
   project_group_prefix varchar(12) NOT NULL,
   PRIMARY KEY  (project_group_id)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7 ;
 
 
 
-CREATE TABLE IF NOT EXISTS alpha_timetracker_project_status (
+CREATE TABLE IF NOT EXISTS timetracker_project_status (
   id int(10) NOT NULL auto_increment,
   status_name varchar(16) NOT NULL,
   PRIMARY KEY  (id)
