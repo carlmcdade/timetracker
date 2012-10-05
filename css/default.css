@@ -211,3 +211,23 @@ div.block:hover .edit {
 	padding: 10px;
 	margin: 0px;
 }
+
+#most-recent-events
+{
+	background:#FFFFCC;
+	padding: 6px;
+	border: 1px solid #eaeaea;
+	margin: 0px 0px 16px 0px;
+}
+
+.event-added
+{
+	background-color: #CCFFCC;
+}
+
+.event-added td
+{
+	border-bottom: 1px solid #E8E8E8;
+}
+
+td[class*='cell-1-'] {width: 57px }

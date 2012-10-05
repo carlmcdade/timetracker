@@ -429,6 +429,63 @@ function timetracker_mytime_()
 		return $form;
 }
 
+function timetracker_mytime_update_()
+{
+			// get vocabulary as options list
+			$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+			$tree = taxonomy_get_tree($voc->vid,0,NULL,true);
+			
+			$terms = array(0 => ''); 
+			foreach ($tree as $key => $term)
+			{
+				$terms[$term->tid] = $term->name;
+			}
+			
+			ksort($terms);
+			
+			  $form['user_task'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Task'),
+				'#prefix' => '<table id="task-table"><tr><td>',
+			  );
+			  
+			  $form['project_id'] = array(
+				'#type' => 'select',
+				'#title' => t('Projects'),
+				'#options' => $terms,
+				'#default_value' => $terms[0],
+				'#description' => t('Choose a project. (optional)'),
+				'#prefix' => '',
+				'#suffix' => ''
+			  );			
+			  			  
+			  $form['event_date'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Date'),
+				'#size' => '10',
+				'#prefix' => '',
+				'#suffix' => ''
+			  );	
+			  
+			  $form['hours_used'] = array(
+				'#type' => 'textfield', 
+				'#title' => t('Hours'),
+				'#size' => '4',
+			  );
+			  
+			  $form['submit'] = array(
+				'#type' => 'submit', 
+				'#value' => 'Save',
+				'#prefix' => '<div class="form-item form-type-submit">',
+				'#suffix' => '</div></td></tr></table>'
+			  );		  
+			  			
+			  $form['#action'] = url('timetracker/timetracker/mytime_update');
+			  
+		return $form;
+}
+
+
 function timetracker_myreports_()
 {
 	global $user;		

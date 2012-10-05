@@ -105,7 +105,7 @@ class timetracker{
         
     }
     
-    function dailyreport($today = FALSE)
+    function dailyreport($today = FALSE, $date = NULL)
     {
     	global $user;
     	
@@ -114,28 +114,104 @@ class timetracker{
     	
     	if($today)
     	{
-    		$result = db_query('SELECT *
-			FROM {timetracker_project_events} e WHERE e.user_id = :uid AND event_date = date (now ()) ORDER BY created DESC', array(':uid' => $user->uid));
+    		$table_header = array(
+				array('data' => 'ID'),
+				array('data' => 'Task'),
+				array('data' => 'Project'),
+				array('data' => 'Date'),
+				array('data' => 'Hours'),
+				array('data' => 'Operations','colspan' => 2),			
+				);
+    		
+    		/* limit to five days */
+    		$result = db_query("SELECT *
+			FROM {timetracker_project_events} e WHERE e.user_id = :uid AND event_date = '" . $date. "' ORDER BY created DESC LIMIT 1", array(':uid' => $user->uid));
+			
+			$all = $result->fetchAll();
+			
+			foreach ($all as $key => $record)
+			{
+					  
+				  $output = '<tr class="event-added" id="row-' . $record->id . '">' .
+					  		'<td class="cell-1-' . $record->id . '">' . $record->id . '</td>' . 
+							'<td class="cell-2-' . $record->id . '">' . $record->project_user_task . '</td>' . 
+							'<td class="cell-3-' . $record->id . '">' . $record->project_name . '</td>' . 
+							'<td class="event-date cell-4-' . $record->id . '">' . $record->event_date . '</td>' .
+							'<td class="cell-5-' . $record->id . '">' . $record->project_hours . '</td>' .
+							'<td class="cell-6-' . $record->id . '">' .
+									l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))) . '</td>' .
+							'<td class="cell-7-' . $record->id . '">' .
+									l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))) . '</td>' .					  
+							'</tr>';	  
+			}
+						 
+		  	return $output;
 			
     	}
     	else
     	{
     	
-    		$result = db_query('SELECT *
-			FROM {timetracker_project_events} e WHERE e.user_id = :uid AND event_date <= date (now ()) ORDER BY event_date DESC', array(':uid' => $user->uid));
-				
-		}
-		/* Result is returned as a iterable object that returns a stdClass object on each iteration */
-		$all = $result->fetchAll();
+    		
+    	$recent_header = array(
+				array('data' => 'ID'),
+				array('data' => 'Task'),
+				array('data' => 'Project'),
+				array('data' => 'Entry Date'),
+				array('data' => 'Hours'),
+				array('data' => 'Operations','colspan' => 2),			
+				);
+    		
+		
+		
+		
+		/* show the user 5 of the most recent events added */
+    	$query = db_query('SELECT *
+			FROM {timetracker_project_events} e WHERE e.user_id = :uid ORDER BY created DESC LIMIT 5', array(':uid' => $user->uid));
+		
+		$recent = $query->fetchAll();
+		
+		foreach ($recent as $record)
+		{
+				  
+				  $event_data[] = array(
+						  'data' => array(
+						  	  array('data' => $record->id, 'class' => 'cell-1-'.$record->id), 
+						  	  array('data' => $record->project_user_task, 'class' => 'cell-2-'.$record->id), 
+						  	  array('data' => $record->project_name, 'class' => 'cell-3-'.$record->id), 
+						  	  array('data' => $record->event_date, 'class' => 'cell-4-'.$record->id),
+						  	  array('data' => $record->project_hours, 'class' => 'cell-5-'.$record->id),
+						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
+						  	  array('data' => l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))), 'class' => 'cell-7-'.$record->id) 
+				  
+						  	  ),
+						  'id' => array('id' => 'row-recent-'.$record->id),
+						  );
+				  
+		}	
+		
+		$output[] = '<div id="most-recent-events"><h2>' . t('Most recent entries') . '</h2>' . theme('table', array(
+			'header' => $recent_header,
+			'rows' => $event_data,
+			
+		  )) . '</div>';
+		
 		
 		$table_header = array(
-				array('data' => 'ID', '' => 'id', 'sort' => 'asc'),
-				array('data' => 'Task', '' => 'project_user_task'),
-				array('data' => 'Project', '' => 'project_name'),
-				array('data' => 'Hours', '' => 'project_hours'),
-				array('data' => 'Operations', '' => '', 'colspan' => 2),			
+				array('data' => 'ID'),
+				array('data' => 'Task'),
+				array('data' => 'Project'),
+				array('data' => ''),
+				array('data' => 'Hours'),
+				array('data' => 'Operations','colspan' => 2),			
 				);
 		
+		/*  limit to five days */
+    	$result = db_query('SELECT *
+			FROM {timetracker_project_events} e WHERE e.user_id = :uid AND event_date <= date (now ()) ORDER BY event_date DESC, id DESC', array(':uid' => $user->uid));
+				
+		
+		/* Result is returned as a iterable object that returns a stdClass object on each iteration */
+		$all = $result->fetchAll();
 		/* check to see if there are any entries for today */
 		
 		
@@ -143,14 +219,11 @@ class timetracker{
 		{
 			$groups[$record->event_date][] = $record;
 		}
-		
-		//$output = print_r($group, 1);
-		
+			
 		
 		foreach($groups as $key => $group)
 		{
-			//
-		
+			//sections by date
 		
 		foreach ($group as $record)
 		{
@@ -159,10 +232,11 @@ class timetracker{
 						  'data' => array(
 						  	  array('data' => $record->id, 'class' => 'cell-1-'.$record->id), 
 						  	  array('data' => $record->project_user_task, 'class' => 'cell-2-'.$record->id), 
-						  	  array('data' => $record->project_name, 'class' => 'cell-3-'.$record->id), 
-						  	  array('data' => $record->project_hours, 'class' => 'cell-4-'.$record->id),
-						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-5-'.$record->id),
-						  	  array('data' => l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))), 'class' => 'cell-6-'.$record->id) 
+						  	  array('data' => $record->project_name, 'class' => 'cell-3-'.$record->id),
+						  	  array('data' => '  ', 'class' => 'cell-4-'.$record->id),
+						  	  array('data' => $record->project_hours, 'class' => 'cell-5-'.$record->id),
+						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
+						  	  array('data' => l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))), 'class' => 'cell-7-'.$record->id) 
 				  
 						  	  ),
 						  'id' => array('id' => 'row-'.$record->id),
@@ -173,6 +247,7 @@ class timetracker{
 		
 		$row_data[] = array(
 							'data' => array(
+								'',
 								'',
 								'',
 								'Total Hours:', 
@@ -203,7 +278,7 @@ class timetracker{
 		
 		$output[] = '<div id="table-' . $key . '">' . 
 		
-		'<div class="table-label">' . $key . ' - ' . $total_hours .' '. t('hours') . '</div>' .	
+		'<div class="table-label"><span class="date">' . $key . '</span> - <span class="hours">' . $total_hours .' '. t('hours') . '</span></div>' .	
 		
 		theme('table', array(
 			'header' => $table_header,
@@ -215,6 +290,7 @@ class timetracker{
 		unset($row_data);
 		$total_hours = 0;
 		
+		}
 		}
     					 
     	return implode('', $output);
@@ -546,9 +622,11 @@ class timetracker{
 				->execute();
 				
 		/* inform the user */
+		drupal_set_message(t( 'Confirming ') . $project_hours . t(' task hours added to ') . $project_info->name . t(' for ') . $event_date );
 		
 		/* show the updated report */
-		print self::dailyreport(TRUE);
+		print $event_date.'}{'.
+		self::dailyreport(TRUE, $event_date);
     	  	
     }
     
