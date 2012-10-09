@@ -178,13 +178,13 @@ class timetracker{
 						  	  array('data' => $record->id, 'class' => 'cell-1-'.$record->id), 
 						  	  array('data' => $record->project_user_task, 'class' => 'cell-2-'.$record->id), 
 						  	  array('data' => $record->project_name, 'class' => 'cell-3-'.$record->id), 
-						  	  array('data' => $record->event_date, 'class' => 'cell-4-'.$record->id),
+						  	  array('data' => l($record->event_date, '',  array('fragment' => $record->event_date, 'external' => TRUE)), 'class' => 'cell-4-'.$record->id),
 						  	  array('data' => $record->project_hours, 'class' => 'cell-5-'.$record->id),
-						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
+						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_mytime/' . $record->id . '/' . $record->event_date, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
 						  	  array('data' => l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))), 'class' => 'cell-7-'.$record->id) 
 				  
 						  	  ),
-						  'id' => array('id' => 'row-recent-'.$record->id),
+						  'id' => array('id' => 'recent-'.$record->id),
 						  );
 				  
 		}	
@@ -214,6 +214,13 @@ class timetracker{
 		$all = $result->fetchAll();
 		/* check to see if there are any entries for today */
 		
+		/* create select list of projects */
+		// get vocabulary as options list
+		$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+		$tree = taxonomy_get_tree($voc->vid,0,NULL,true);
+			
+		
+		
 		
 		foreach ($all as $key => $record)
 		{
@@ -224,23 +231,61 @@ class timetracker{
 		foreach($groups as $key => $group)
 		{
 			//sections by date
+			$output[] = '<div id="table-' . $key . '">' . 
+		
+			'<div class="table-label"><a name="' . $key . '" href=""><span class="date">' . $key . '</span></a><span class="hours"></span></div>';
+			
+			$date = $key;
+		
 		
 		foreach ($group as $record)
 		{
-				  
-				  $row_data[] = array(
+				$selected = '';  
+				$terms = '<select id="projects-'.$record->id.'" name="projects">'; 
+				$terms .= '<option value="0"></option>';
+					foreach ($tree as $key => $term)
+					{
+						if($term->tid === $record->project_id)
+						{
+							$selected = 'selected="selected"';
+						}
+						$terms .= '<option value="'.$term->tid.'" '.$selected.'>' . $term->name . '</option>';
+						$selected = '';
+					}
+				$terms .= '</select>';  
+			
+				$row_data[] = array(
 						  'data' => array(
 						  	  array('data' => $record->id, 'class' => 'cell-1-'.$record->id), 
 						  	  array('data' => $record->project_user_task, 'class' => 'cell-2-'.$record->id), 
 						  	  array('data' => $record->project_name, 'class' => 'cell-3-'.$record->id),
-						  	  array('data' => '  ', 'class' => 'cell-4-'.$record->id),
+						  	  array('data' => '<input type="hidden" name="my_projects_id" id="my-projects-id" value="' .$record->project_id . '">'),
 						  	  array('data' => $record->project_hours, 'class' => 'cell-5-'.$record->id),
-						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
+						  	  array('data' => l(t('delete'), 'timetracker/timetracker/delete_mytime/' . $record->id . '/' . $record->event_date, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))), 'class' => 'cell-6-'.$record->id),
 						  	  array('data' => l(t('update'), APP_MODULE .'/timetracker/update_time/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))), 'class' => 'cell-7-'.$record->id) 
 				  
 						  	  ),
 						  'id' => array('id' => 'row-'.$record->id),
 						  );
+				  $row_data[] = array(
+							'data' => array(
+								
+								array('data' => '<div style="text-align:right;cursor:pointer;" class="form-close">' . t('close') . ' x</div>' .
+									'<form method="post" id="update-entry-'.$record->id.'" action="http://drupal.se/timetracker/timetracker/update_time">'.
+									'<table><tr>' .
+									'<td><label>'.t('Task').'<input type="textfield" id="edit-task-'.$record->id.'" name="task" value="'.$record->project_user_task.'" size="12"></label></td>' .
+									'<td><label>' . t('Projects') . '' . $terms . '</label></td>' .
+									'<td>' .
+									'<input type="hidden" name="form-id" id="form-id-'.$record->id.'" value="'.$record->id.'"></td>' .
+									'<td><label>'.t('Hours').'<input type="textfield" id="edit-hours-'.$record->id.'" name="hours" size="2" value="'.$record->project_hours.'"></label>' .
+									'<td><input type="button" id="sendUpdate" value="update"></td>' .
+									'</tr></table>'.
+									'</form>', 
+									'colspan' => 7)),
+								'id' => array('id' => 'form-row-'.$record->id),
+								'style' => array('style' => 'display:none'),
+						);
+				  
 				  $total_hours += $record->project_hours;
 				  
 		}
@@ -252,35 +297,18 @@ class timetracker{
 								'',
 								'Total Hours:', 
 								array('data' => $total_hours , 'colspan' => 3, 'id' => 'total-user-hours')),
+							'id' => array('id' => 'total-row-'.$date),
 						);
 		
-		$row_data[] = array(
-							'data' => array(
-								
-								array('data' => '<div style="text-align:right;cursor:pointer;" class="form-close">' . t('close') . ' x</div>' .
-									'<form method="post" style="display:none" id="update-mini-form" action="' . 'http://drupal.se/timetracker/timetracker/update_time">'.
-									'<table><tr>' .
-									'<td><label>'.t('Task').'<input type="textfield" id="edit-task" name="title" value="" size="12"></label></td>' .
-									'<td><label>'.t('Date').'<input type="textfield" id="edit-event-date" name="event_date" value="" size=""></label>' .
-									'<input type="hidden" name="my_projects_id" id="my-projects-id" value="' .$record->project_id . '">' .
-									'<input type="hidden" name="id_mini_form" id="id-mini-form" value=""></td>' .
-									'<td><label>'.t('Hours').'<input type="textfield" id="edit-hours" name="hours" size="2" value=""></label>' .
-									'<td><input type="button" id="sendUpdate" value="update"></td>' .
-									'</tr></table>'.
-									'</form>', 
-									'colspan' => 6)),
-								'id' => array('id' => 'mini-form-row'),
-								'style' => array('style' => 'display:none'),
-						);
+		
+		
+		
 		
 		
 		/* Format and print out the table. */
 		
-		$output[] = '<div id="table-' . $key . '">' . 
 		
-		'<div class="table-label"><span class="date">' . $key . '</span> - <span class="hours">' . $total_hours .' '. t('hours') . '</span></div>' .	
-		
-		theme('table', array(
+		$output[] = theme('table', array(
 			'header' => $table_header,
 			'rows' => $row_data,
 			'id' => 'table-articles',
@@ -397,7 +425,6 @@ class timetracker{
 									'<table><tr>' .
 									'<td><label>'.t('Task').'<input type="textfield" id="edit-task" name="title" value="" size="12"></label></td>' .
 									'<td><label>'.t('Date').'<input type="textfield" id="edit-event-date" name="event_date" value="" size=""></label>' .
-									'<input type="hidden" name="my_projects_id" id="my-projects-id" value="' .$project . '">' .
 									'<input type="hidden" name="id_mini_form" id="id-mini-form" value=""></td>' .
 									'<td><label>'.t('Hours').'<input type="textfield" id="edit-hours" name="hours" size="2" value=""></label>' .
 									'<td><input type="button" id="sendUpdate" value="update"></td>' .
@@ -529,24 +556,70 @@ class timetracker{
     	
     	/* id title hours date */
     	$pid = check_plain($_POST['pid']);
-    	$id = check_plain($_POST['id_mini_form']);
+    	$id = check_plain($_POST['id']);
     	$hours = check_plain($_POST['hours']);
-    	$title = check_plain($_POST['title']);
-    	$event_date = check_plain($_POST['event_date']);
+    	$task = check_plain($_POST['task']);
+    	
+    	/*  get the term name */
+    	$project = check_plain($_POST['project']);
+		$project_info = taxonomy_term_load($project);
     	
     	$event_update = db_update('timetracker_project_events') // Table name no longer needs {}
 		  ->fields(array(
-		    'project_user_task' => $title,
-		    'event_date' => $event_date,
+		    'project_user_task' => $task,
+		    'project_name' => $project_info->name,
+		    'project_id' => $project_info->tid,
 			'project_hours' => $hours,
 			'changed' => date("Y-m-d H:i:s")
 		  ))
 		  ->condition('id', $id, '=')
 		  ->condition('user_id', $user->uid, '=')
 		  ->execute();
+		  
+		if($event_update > 0)
+		{
+		 
+		  /* limit to five days */
+    	$result = db_query("SELECT *
+			FROM {timetracker_project_events} e WHERE e.id = :id LIMIT 1", array(':id' => $id));
+			
+		$all = $result->fetchObject();
+			
+		
+			$output = '<tr class="event-added" id="row-' . $all->id . '">' .
+					  '<td class="cell-1-' . $all->id . '">' . $all->id . '</td>' . 
+					  '<td class="cell-2-' . $all->id . '">' . $all->project_user_task . '</td>' . 
+					  '<td class="cell-3-' . $all->id . '">' . $all->project_name . '</td>' . 
+					  '<td class="event-date cell-4-' . $all->id . '">' . $all->event_date . '</td>' .
+					  '<td class="cell-5-' . $all->id . '">' . $all->project_hours . '</td>' .
+					  '<td class="cell-6-' . $all->id . '">' .
+					  	l(t('delete'), 'timetracker/timetracker/delete_time/' . $all->id . '/' . $all->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $all->id))) . '</td>' .
+					  '<td class="cell-7-' . $all->id . '">' .
+						l(t('update'), APP_MODULE .'/timetracker/update_time/'.$all->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $all->id))) . '</td>' .
+					  '</tr>';
+			$row_id = $all->id;
+			
+		/* update the hours total for the day */
+		$result_hours = db_query('SELECT * FROM {timetracker_project_events} e WHERE e.user_id = :uid AND e.event_date = :eid', array(':uid' => $user->uid,':eid' => $all->event_date));
+				
+		/* Result is returned as a iterable object that returns a stdClass object on each iteration */
+		$all_hours = $result_hours->fetchAll();
+		
+		
+		foreach ($all_hours as $record)
+		{
+			$total_hours += $record->project_hours;
+		}	
+		
     	
     	/* ajax response */
-    	print json_encode($_POST,1);
+    	print $all->id . '}{' . $output . '}{' . $total_hours . '}{' . $all->event_date;
+    	  
+    	}
+    	else
+    	{
+    		print t('error row not updated');
+    	}
     }
     
     /* the response to the delete link on the list of entries */
@@ -628,6 +701,38 @@ class timetracker{
 		print $event_date.'}{'.
 		self::dailyreport(TRUE, $event_date);
     	  	
+    }
+    
+    /* the response to the delete link on the list of entries */
+    
+    function delete_mytime()
+    {
+    	global $user;
+    	
+    	/* remove record from user database */
+    	$id = check_plain(arg(3));
+    	
+    	$deleted = db_delete('timetracker_project_events')
+		  ->condition('id', $id)
+		  ->execute();
+		  
+		$total_hours = 0;
+    	
+    	/* clean input */
+    	$date = check_plain(arg(4));
+    	
+    	$result = db_query('SELECT * FROM {timetracker_project_events} e WHERE e.user_id = :uid AND e.event_date = :eid', array(':uid' => $user->uid,':eid' => $date));
+				
+		/* Result is returned as a iterable object that returns a stdClass object on each iteration */
+		$all = $result->fetchAll();
+		
+		
+		foreach ($all as $record)
+		{
+			$total_hours += $record->project_hours;
+		}
+    	
+    	print $date . '}{' . $total_hours;
     }
     
     

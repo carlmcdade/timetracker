@@ -54,7 +54,8 @@
 						}
             });
             
-			$('#update-mini-form').ajaxForm({target: this});
+			$('#update-mini-form').ajaxForm({
+			target: this});
 						
 			$( "#edit-event-date" ).AnyTime_picker(
 				  { format: "%Y-%m-%d",
@@ -74,8 +75,17 @@
 						dataType: "html",
 						cache: false,
 						success: function(result){
-							$("#row-" + row[1]).remove();
-							$('#total-user-hours').html(result);
+							
+							section = result.split('}{');
+							
+							$("#row-" + row[1]).fadeOut('slow', function(){
+									$(this).remove();							
+							});
+							
+							
+							$('#total-row-' + section[0] + ' #total-user-hours').text(section[1]);
+						
+							
 						}
 				});
 				
@@ -86,52 +96,58 @@
 			$("a.update-time").live("click", function(event) {
 					
 				event.preventDefault();	
-	 			var row = $(this).attr("id").split('-');
- 			
-	 			$("#id-mini-form").val(row[1]);
+				
+	 			var row = $(this).attr("id").split('-');			
 	 			
-	 			$('#row-' + row[1]).after($("#mini-form-row").show());
+	 			$("tr:visible[id*='form-row-']").hide();
 	 			
-	 			$("#update-mini-form").show(); 
+	 			$('input#edit-task-' + row[1]).val($('row-' + row[1]).text());
 	 			
-	 			$("#update-mini-form #edit-task").val($('.cell-2-' + row[1]).text());
+	 			/// reset the sect list to the selected value if not changed by submit
+	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
-	 			$("#update-mini-form #edit-event-date").val($('.cell-3-' + row[1]).text());
-	 			
-	 			$("#update-mini-form #edit-hours").val($('.cell-4-' + row[1]).text());
+	 			$("#form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
 	 			
+
 	 			
 			});
 			
 			$("div.form-close").live("click", function(event) {
-					$("tr:visible[id*='mini-form-']").hide();
+					$("tr:visible[class*='temp-form']").hide('slow');
 			});
 			
-			$("#sendUpdate").live("click",function() {			
+			$("#sendUpdate").live("click",function() {
+					
+				var row = $(this).parents().eq(6).attr('id').split('-');
 				$.ajax({
 							type: "POST",
-							dataType: "json",
+							dataType: "html",
 							url: "http://drupal.se/timetracker/timetracker/update_time/",
-							data: $('#update-mini-form').serialize(),
+							data:{
+								id:$('input#form-id-' + row[2]).val(),
+								task:$('input#edit-task-' + row[2]).val(),
+								hours:$('input#edit-hours-' + row[2]).val(),
+								project:$('select#projects-' + row[2]).val(),
+							},
 							cache: false,
 							success: function(result){
 								
-								$.ajax({
-									type: "POST",
-									url: "http://drupal.se/timetracker/timetracker/myreport/",
-									data: result,
-									cache: false,
-									success: function(html){
-										
-										$("#output").html(html);
-									
-									}
+								section = result.split('}{');
+								$('#row-' + section[0]).fadeOut("slow", function(){
+
+								$(this).replaceWith(section[1]);
+								
+								$('#row-' + section[0]).fadeIn("slow");
+								
+								$('#total-row-' + section[3] + ' #total-user-hours').text(section[2]);
+								$('#total-row-' + section[3]).removeClass().addClass('event-added');
+								
+
 								});
 								
 							}
 				});
-				
 				
 				
 				return false;			

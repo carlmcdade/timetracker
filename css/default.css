@@ -188,6 +188,18 @@ div.block:hover .edit {
 .ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
 
 
+
+.table-label
+{
+	font-size: 1.6em;
+}
+
+
+.table-label a:link
+{
+	text-decoration: none;
+}
+
 #task-table
 {
 	border-collapse: collapse;
@@ -212,6 +224,8 @@ div.block:hover .edit {
 	margin: 0px;
 }
 
+
+
 #most-recent-events
 {
 	background:#FFFFCC;
@@ -227,7 +241,14 @@ div.block:hover .edit {
 
 .event-added td
 {
-	border-bottom: 1px solid #E8E8E8;
+	border-bottom: 1px solid #CCCCCC;
+}
+
+.event-date .date-text
+{
+	display:none;
 }
 
 td[class*='cell-1-'] {width: 57px }
+
+td[class*='cell-2-'] {width: 287px }
