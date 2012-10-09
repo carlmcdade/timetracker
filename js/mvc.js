@@ -101,15 +101,29 @@
 	 			
 	 			$("tr:visible[id*='form-row-']").hide();
 	 			
-	 			$('input#edit-task-' + row[1]).val($('row-' + row[1]).text());
+	 			console.log($('input#edit-task-' + row[1]).val($('row-' + row[1]).text()));
 	 			
 	 			/// reset the sect list to the selected value if not changed by submit
 	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
 	 			$("#form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
+			});
+			
+			$("a.update-recent-time").live("click", function(event) {
+					
+				event.preventDefault();	
+				
+	 			var row = $(this).attr("id").split('-');			
 	 			
-
+	 			$("tr:visible[id*='recent-form-row-']").hide();
+	 			
+	 			$('input#edit-task-' + row[1]).val($('recent-' + row[1]).text());
+	 			
+	 			/// reset the sect list to the selected value if not changed by submit
+	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
+	 			
+	 			$("#recent-form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
 			});
 			
