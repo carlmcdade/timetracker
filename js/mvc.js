@@ -111,7 +111,8 @@
 	 			
 	 			$("tr:visible[id*='form-row-']").hide();
 	 			
-	 			
+	 			$("tr:visible[id*='recent-form-row-']").hide();
+	 				 			
 	 			/// reset the sect list to the selected value if not changed by submit
 	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
@@ -129,9 +130,11 @@
 	 			
 	 			$("tr:visible[id*='recent-form-row-']").hide();
 	 			
+	 			$("tr:visible[id*='form-row-']").hide();
+	 			 			
 	 			$('input#re-task-' + row[1]).val($('recent-' + row[1]).text());
 	 			
-	 			/// reset the sect list to the selected value if not changed by submit
+	 			// reset the select list to the selected value if not changed by submit
 	 			$("#re-update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
 	 			$("#recent-form-row-" + row[1]).addClass('temp-form').show('slow');

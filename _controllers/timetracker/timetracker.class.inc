@@ -819,7 +819,7 @@ class timetracker{
 						l(t('update'), APP_MODULE .'/timetracker/update_mytime/'.$all->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $all->id))) . '</td>' .
 					  '</tr>';
 					  
-			$recent = '<tr class="event-added recent-' . $all->id . '">' .
+			$recent = '<tr class="event-added recent-'. $all->id .'" id="recent-' . $all->id . '">' .
 					  '<td class="cell-1-' . $all->id . '">' . $all->id . '</td>' . 
 					  '<td class="cell-2-' . $all->id . '">' . $all->project_user_task . '</td>' . 
 					  '<td class="cell-3-' . $all->id . '">' . $all->project_name . '</td>' . 
