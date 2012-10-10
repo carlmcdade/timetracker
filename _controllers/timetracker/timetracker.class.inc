@@ -216,6 +216,7 @@ class timetracker{
 									'<input type="hidden" name="form-id" id="re-form-id-'.$re_record->id.'" value="'.$re_record->id.'"></td>' .
 									'<td><label>'.t('Hours').'<input type="textfield" id="re-hours-'.$re_record->id.'" name="hours" size="2" value="'.$re_record->project_hours.'"></label>' .
 									'<td><input type="button" class="recentUpdate" value="update"></td>' .
+									'<td class="indicator"><div class="working-indicator"></div></td>' .
 									'</tr></table>'.
 									'</form>', 
 									'colspan' => 7)),
@@ -312,6 +313,7 @@ class timetracker{
 									'<input type="hidden" name="form-id" id="form-id-'.$record->id.'" value="'.$record->id.'"></td>' .
 									'<td><label>'.t('Hours').'<input type="textfield" id="edit-hours-'.$record->id.'" name="hours" size="2" value="'.$record->project_hours.'"></label>' .
 									'<td><input type="button" id="sendUpdate" value="update"></td>' .
+									'<td class="indicator"><div class="working-indicator"></div></td>' .
 									'</tr></table>'.
 									'</form>', 
 									'colspan' => 7)),

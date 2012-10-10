@@ -7,7 +7,7 @@
      	// container start
      	
      		////////////////////////////////////////////////////////////////////
-     		
+     		  		
      		
      		////////////////////////////////////////////////////////////////////
      	   
@@ -118,6 +118,16 @@
 	 			
 	 			$("#form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
+	 			$("form#update-entry-" + row[1] + " table tbody tr td.indicator div.working-indicator").ajaxStart(function(){
+     				
+				  $(this).show();
+				  
+				}).ajaxStop(function(){
+					
+				  $(this).hide();
+				  
+				}); 
+	 			
 			});
 			
 			////////////////////////////////////////////////////////////////////
@@ -138,6 +148,16 @@
 	 			$("#re-update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
 	 			$("#recent-form-row-" + row[1]).addClass('temp-form').show('slow');
+	 			
+	 			$("form#re-update-entry-" + row[1] + " table tbody tr td.indicator div.working-indicator").ajaxStart(function(){
+     				
+				  $(this).show();
+				  
+				}).ajaxStop(function(){
+					
+				  $(this).hide();
+				  
+				}); 
 	 			
 			});
 			
@@ -189,11 +209,6 @@
 
 								});
 								
-								
-								
-								
-								
-								
 							}
 				});
 				
@@ -205,6 +220,9 @@
 			////////////////////////////////////////////////////////////////////
 			
 			$("#sendUpdate").live("click",function() {
+					
+				// show working indicator
+				
 					
 				var row = $(this).parents().eq(6).attr('id').split('-');
 				$.ajax({
