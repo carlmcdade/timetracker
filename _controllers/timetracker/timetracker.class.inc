@@ -825,7 +825,7 @@ class timetracker{
 					  '<td class="cell-1-' . $all->id . '">' . $all->id . '</td>' . 
 					  '<td class="cell-2-' . $all->id . '">' . $all->project_user_task . '</td>' . 
 					  '<td class="cell-3-' . $all->id . '">' . $all->project_name . '</td>' . 
-					  '<td class="event-date cell-4-' . $all->id . '">' . $all->event_date . '</td>' .
+					  '<td class="event-date cell-4-' . $all->id . '"><a href="#' . $all->event_date . '">' . $all->event_date . '</a></td>' .
 					  '<td class="cell-5-' . $all->id . '">' . $all->project_hours . '</td>' .
 					  '<td class="cell-6-' . $all->id . '">' .
 					  	l(t('delete'), 'timetracker/timetracker/delete_time/' . $all->id . '/' . $all->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $all->id))) . '</td>' .
