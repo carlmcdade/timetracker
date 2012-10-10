@@ -5,6 +5,11 @@
      $(document).ready(function() {
      		 
      	// container start
+     	
+     		////////////////////////////////////////////////////////////////////
+     		
+     		
+     		////////////////////////////////////////////////////////////////////
      	   
             $('#timetracker-mytime-').ajaxForm({
             success: function(result){
@@ -46,6 +51,8 @@
              
             });
             
+            ////////////////////////////////////////////////////////////////////
+            
             $('#timetracker-myreports-').ajaxForm({
             target:'#output',
             success: function(){
@@ -62,6 +69,7 @@
 					formatUtcOffset: "%: (%@)",
 					placement: "popup" });
 			
+			////////////////////////////////////////////////////////////////////
 	 
 	 		$("a.delete-time").live("click", function(event) {
 	 			
@@ -93,6 +101,8 @@
 				
 			});
 			
+			////////////////////////////////////////////////////////////////////
+			
 			$("a.update-time").live("click", function(event) {
 					
 				event.preventDefault();	
@@ -101,7 +111,6 @@
 	 			
 	 			$("tr:visible[id*='form-row-']").hide();
 	 			
-	 			console.log($('input#edit-task-' + row[1]).val($('row-' + row[1]).text()));
 	 			
 	 			/// reset the sect list to the selected value if not changed by submit
 	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
@@ -109,6 +118,8 @@
 	 			$("#form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
 			});
+			
+			////////////////////////////////////////////////////////////////////
 			
 			$("a.update-recent-time").live("click", function(event) {
 					
@@ -118,18 +129,77 @@
 	 			
 	 			$("tr:visible[id*='recent-form-row-']").hide();
 	 			
-	 			$('input#edit-task-' + row[1]).val($('recent-' + row[1]).text());
+	 			$('input#re-task-' + row[1]).val($('recent-' + row[1]).text());
 	 			
 	 			/// reset the sect list to the selected value if not changed by submit
-	 			$("#update-entry-" + row[1]).each (function() { this.reset(); });
+	 			$("#re-update-entry-" + row[1]).each (function() { this.reset(); });
 	 			
 	 			$("#recent-form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
 			});
 			
+			////////////////////////////////////////////////////////////////////
+			
 			$("div.form-close").live("click", function(event) {
 					$("tr:visible[class*='temp-form']").hide('slow');
 			});
+			
+			////////////////////////////////////////////////////////////////////
+			
+			$(".recentUpdate").live("click", function() {
+					
+					
+				var row = $(this).parents().eq(6).attr('id').split('-');
+				
+				
+				$.ajax({
+							type: "POST",
+							dataType: "html",
+							url: "http://drupal.se/timetracker/timetracker/update_mytime/",
+							data:{
+								id:$('input#re-form-id-' + row[3]).val(),
+								task:$('input#re-task-' + row[3]).val(),
+								hours:$('input#re-hours-' + row[3]).val(),
+								project:$('select#re-projects-' + row[3]).val(),
+							},
+							cache: false,
+							success: function(result){
+								
+								section = result.split('}{');
+								$('#recent-' + section[0]).fadeOut("slow", function(){
+
+										$(this).replaceWith(section[4]);									
+								
+										$('#recent-' + section[0]).fadeIn("slow");
+								
+								});
+								
+								$('.row-' + section[0]).fadeOut("slow", function(){
+										
+										$(this).replaceWith(section[1]);
+								
+										$('.row-' + section[0]).fadeIn("slow");
+								
+										$('#total-row-' + section[3] + ' #total-user-hours').text(section[2]);
+								
+										$('#total-row-' + section[3]).removeClass().addClass('event-added');							
+
+								});
+								
+								
+								
+								
+								
+								
+							}
+				});
+				
+				
+				return false;			
+				
+			});
+			
+			////////////////////////////////////////////////////////////////////
 			
 			$("#sendUpdate").live("click",function() {
 					
@@ -137,7 +207,7 @@
 				$.ajax({
 							type: "POST",
 							dataType: "html",
-							url: "http://drupal.se/timetracker/timetracker/update_time/",
+							url: "http://drupal.se/timetracker/timetracker/update_mytime/",
 							data:{
 								id:$('input#form-id-' + row[2]).val(),
 								task:$('input#edit-task-' + row[2]).val(),
@@ -148,16 +218,26 @@
 							success: function(result){
 								
 								section = result.split('}{');
-								$('#row-' + section[0]).fadeOut("slow", function(){
+								$('.row-' + section[0]).fadeOut("slow", function(){
+										
 
-								$(this).replaceWith(section[1]);
+										$(this).replaceWith(section[1]);
 								
-								$('#row-' + section[0]).fadeIn("slow");
+										$('.row-' + section[0]).fadeIn("slow");
 								
-								$('#total-row-' + section[3] + ' #total-user-hours').text(section[2]);
-								$('#total-row-' + section[3]).removeClass().addClass('event-added');
+										$('#total-row-' + section[3] + ' #total-user-hours').text(section[2]);
+								
+										$('#total-row-' + section[3]).removeClass().addClass('event-added');
 								
 
+								});
+								
+								$('#recent-' + section[0]).fadeOut("slow", function(){
+
+										$(this).replaceWith(section[4]);									
+								
+										$('#recent-' + section[0]).fadeIn("slow");
+								
 								});
 								
 							}
@@ -167,6 +247,8 @@
 				return false;			
 				
 			});
+			
+			////////////////////////////////////////////////////////////////////
 			
 			$('#edit-export').live("click", function(){
 				
