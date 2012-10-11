@@ -31,16 +31,22 @@
 					
 					// hide the working table 
 					// $('#table-' + section[0]).hide();
-					$('div#most-recent-events table > tbody').prepend(section[1]);
-					
-					// remove the last row to keep the list short ( 5 rows )
-					$('div#most-recent-events table > tbody > tr:last').remove();
 					
 					
+					// most recent table
+					$('div#most-recent-events table:eq(1) > tbody').prepend(section[1]);
+					
+					// remove the last rows to keep the list short ( 5 rows ) for most recent
+					var rowCount = $("div#most-recent-events > table:eq(1) > tbody > tr").length;
+
+					for (i = rowCount; i > rowCount - 3; i--)
+					{
+						$('div#most-recent-events table:eq(1) > tbody > tr:eq(' + i +')').remove();
+					}
+					
+					// daily table				
 					$('div#table-' + section[0] + ' table > thead').append(section[1]);
-					
-					
-					
+									
 					// show new working table
 					/*$('#output').html(section[1]).css({
 							backgroundColor: '#99FF66',
@@ -86,11 +92,18 @@
 							
 							section = result.split('}{');
 							
-							$("#row-" + row[1]).fadeOut('slow', function(){
+							$(".row-" + row[1]).fadeOut('slow', function(){
 									$(this).remove();							
 							});
 							
+							$("#form-row-" + row[1]).remove();	
 							
+							$("#recent-" + row[1]).fadeOut('slow', function(){
+									$(this).remove();							
+							});
+							
+							$("#recent-form-row-" + row[1]).remove();
+														
 							$('#total-row-' + section[0] + ' #total-user-hours').text(section[1]);
 						
 							
@@ -149,7 +162,7 @@
 	 			
 	 			$("#recent-form-row-" + row[1]).addClass('temp-form').show('slow');
 	 			
-	 			$("form#re-update-entry-" + row[1] + " table tbody tr td.indicator div.working-indicator").ajaxStart(function(){
+	 			$("form#update-entry-" + row[1] + " table tbody tr td.indicator div.working-indicator").ajaxStart(function(){
      				
 				  $(this).show();
 				  

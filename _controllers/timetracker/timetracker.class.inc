@@ -137,17 +137,31 @@ class timetracker{
 			foreach ($all as $key => $record)
 			{
 					  
-				  $output = '<tr class="event-added" id="row-' . $record->id . '">' .
+				  $output = '<tr class="event-added" id="recent-' . $record->id . '">' .
 					  		'<td class="cell-1-' . $record->id . '">' . $record->id . '</td>' . 
 							'<td class="cell-2-' . $record->id . '">' . $record->project_user_task . '</td>' . 
 							'<td class="cell-3-' . $record->id . '">' . $record->project_name . '</td>' . 
-							'<td class="event-date cell-4-' . $record->id . '">' . $record->event_date . '</td>' .
+							'<td class="event-date cell-4-' . $record->id . '"><a href="#'. $record->event_date .'">' . $record->event_date . '</a></td>' .
 							'<td class="cell-5-' . $record->id . '">' . $record->project_hours . '</td>' .
 							'<td class="cell-6-' . $record->id . '">' .
 									l(t('delete'), 'timetracker/timetracker/delete_time/' . $record->id . '/' . $record->project_id, array('attributes' => array('class' => array('delete-time'), 'id' => 'del-' . $record->id))) . '</td>' .
 							'<td class="cell-7-' . $record->id . '">' .
-									l(t('update'), APP_MODULE .'/timetracker/update_mytime/'.$record->id, array('attributes' => array('class' => array('update-time'), 'id' => 'upd-' . $record->id))) . '</td>' .					  
-							'</tr>';	  
+									l(t('update'), '', array('attributes' => array('class' => array('update-recent-time'), 'id' => 'upd-' . $record->id))) . '</td>' .					  
+							'</tr>'. "\n" .
+							'<tr id="recent-form-row-'.$record->id .'" style="display:none" class=" temp-form">' . 
+							'<td colspan="7"><div style="text-align:right;cursor:pointer;" class="form-close">' . t('close') . ' x</div>' .
+								'<form method="post" id="re-update-entry-'.$record->id.'" action="http://drupal.se/timetracker/timetracker/update_mytime">'.
+								'<table><tr>' .
+								'<td><label>'.t('Task').'<input type="textfield" id="re-task-'.$record->id.'" name="task" value="'.$record->project_user_task.'" size="24"></label></td>' .
+								'<td><label>' . t('Projects') . '' . '</label></td>' .
+								'<td>' .
+								'<input type="hidden" name="form-id" id="re-form-id-'.$record->id.'" value="'.$record->id.'"></td>' .
+								'<td><label>'.t('Hours').'<input type="textfield" id="re-hours-'.$record->id.'" name="hours" size="2" value="'.$record->project_hours.'"></label>' .
+								'<td><input type="button" class="recentUpdate" value="update"></td>' .
+								'<td class="indicator"><div class="working-indicator"></div></td>' .
+								'</tr></table>'.
+								'</form>' .
+							 '</td></tr>';	  
 			}
 						 
 		  	return $output;
@@ -730,11 +744,10 @@ class timetracker{
 				->execute();
 				
 		/* inform the user */
-		drupal_set_message(t( 'Confirming ') . $project_hours . t(' task hours added to ') . $project_info->name . t(' for ') . $event_date );
+		//drupal_set_message(t( 'Confirming ') . $project_hours . t(' task hours added to ') . $project_info->name . t(' for ') . $event_date );
 		
 		/* show the updated report */
-		print $event_date.'}{'.
-		self::dailyreport(TRUE, $event_date);
+		print $event_date.'}{'. self::dailyreport(TRUE, $event_date);
     	  	
     }
     
@@ -775,7 +788,13 @@ class timetracker{
     function update_mytime()
     {
     	
-    	global $user;    	
+    	global $user; 
+    	
+    	/* create select list of projects */
+		// get vocabulary as options list
+		$voc = taxonomy_vocabulary_machine_name_load(variable_get('timetracker_projects', 'projects'));
+		$tree = taxonomy_get_tree($voc->vid,0,NULL,true);
+		
     	
     	/* id title hours date */
     	$pid = check_plain($_POST['pid']);
